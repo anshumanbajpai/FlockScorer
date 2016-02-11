@@ -1,5 +1,6 @@
 package co.flock.controller;
 
+import co.flock.FlockMessagePoster;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -30,22 +31,38 @@ public class Controller {
                     if (last.compareTo("++") == 0) {
                         String name = extractName(splited);
                         responseMap.put(name, String.valueOf(incrementScore(name)));
+                        FlockMessagePoster.Post(getFormattedText(responseMap));
                         return responseMap;
                     } else if (last.compareTo("--") == 0) {
                         String name = extractName(splited);
                         responseMap.put(name, String.valueOf(decrementScore(name)));
+                        FlockMessagePoster.Post(getFormattedText(responseMap));
                         return responseMap;
                     }
                 }
             } else if (isScorerLeaderBoardMessage(message)) {
                 Map<String, String> topScorers = getTopScorers(_scoreMap, false, MAX_TOP_SCORERS);
                 if (!topScorers.isEmpty()) {
+                    FlockMessagePoster.Post(getFormattedText(topScorers));
                     return topScorers;
+                }else {
+                    FlockMessagePoster.Post("No scores!");
                 }
             }
         }
 
         return null;
+    }
+
+    private static String getFormattedText(Map<String, String> responseMap) {
+
+        String response = "";
+
+        for (Map.Entry<String, String> entry : responseMap.entrySet()) {
+            response += entry.getKey() + " : " + entry.getValue() + '\n';
+        }
+
+        return response;
     }
 
     private static boolean isScorerLeaderBoardMessage(String message) {
