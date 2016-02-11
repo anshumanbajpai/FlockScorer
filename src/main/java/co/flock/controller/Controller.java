@@ -1,7 +1,10 @@
 package co.flock.controller;
 
 import co.flock.FlockMessagePoster;
+import co.flock.redis.domain.User;
+import co.flock.redis.repository.UserRepository;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -14,7 +17,12 @@ public class Controller {
     private static final String FILED_TEXT = "text";
     private static final Pattern SPACE_PATTERN = Pattern.compile("\\s+");
     private static final int MAX_TOP_SCORERS = 5;
-    private final Map<String, Integer> _scoreMap = new HashMap<>();
+    private UserRepository userRepository;
+
+    @Autowired
+    public void setRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @RequestMapping(value = "/scorer", method = RequestMethod.POST)
     @ResponseBody
@@ -42,7 +50,7 @@ public class Controller {
                     }
                 }
             } else if (isScorerLeaderBoardMessage(message)) {
-                Map<String, String> topScorers = getTopScorers(_scoreMap, false, MAX_TOP_SCORERS);
+                Map<String, String> topScorers = getTopScorers(getScoreMap(), false, MAX_TOP_SCORERS);
                 if (!topScorers.isEmpty()) {
                     FlockMessagePoster.Post(getFormattedText(topScorers));
                     return topScorers;
@@ -51,11 +59,11 @@ public class Controller {
                 }
             } else if (isScorerIndiScoreMessage(message)) {
                 String name = message.substring(message.indexOf('@') + 1).trim();
-                if (_scoreMap.containsKey(name)) {
-                    responseMap.put(name, String.valueOf(_scoreMap.get(name)));
+                if (getScoreMap().containsKey(name)) {
+                    responseMap.put(name, String.valueOf(getScoreMap().get(name)));
                     FlockMessagePoster.Post(getFormattedText(responseMap));
                     return responseMap;
-                }else {
+                } else {
                     FlockMessagePoster.Post("Not found!");
                 }
             }
@@ -88,27 +96,42 @@ public class Controller {
     }
 
     private int decrementScore(String name) {
-        if (_scoreMap.containsKey(name)) {
-            Integer score = _scoreMap.get(name);
+        Map<String, Integer> scoreMap = getScoreMap();
+        if (scoreMap.containsKey(name)) {
+            Integer score = scoreMap.get(name);
             score--;
-            _scoreMap.put(name, score);
+            scoreMap.put(name, score);
+            userRepository.put(new User(name,score));
         } else {
-            _scoreMap.put(name, -1);
+            userRepository.put(new User(name,-1));
+            scoreMap.put(name, -1);
         }
 
-        return _scoreMap.get(name);
+        return scoreMap.get(name);
     }
 
     private int incrementScore(String name) {
-        if (_scoreMap.containsKey(name)) {
-            Integer score = _scoreMap.get(name);
+        Map<String, Integer> scoreMap = getScoreMap();
+        if (scoreMap.containsKey(name)) {
+            Integer score = scoreMap.get(name);
             score++;
-            _scoreMap.put(name, score);
+            userRepository.put(new User(name,score));
+            scoreMap.put(name, score);
         } else {
-            _scoreMap.put(name, 1);
+            userRepository.put(new User(name,-1));
+            scoreMap.put(name, 1);
         }
 
-        return _scoreMap.get(name);
+        return scoreMap.get(name);
+    }
+
+    private Map<String, Integer> getScoreMap() {
+        List<User> users = userRepository.getObjects();
+        Map<String, Integer> map = new HashMap<>();
+        for (User user : users) {
+            map.put(user.getName(), user.getScore());
+        }
+        return map;
     }
 
     private static String extractName(String[] message) {
