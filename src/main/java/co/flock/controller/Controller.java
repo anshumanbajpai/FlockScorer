@@ -1,6 +1,7 @@
 package co.flock.controller;
 
 import co.flock.FlockMessagePoster;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -45,7 +46,7 @@ public class Controller {
                 if (!topScorers.isEmpty()) {
                     FlockMessagePoster.Post(getFormattedText(topScorers));
                     return topScorers;
-                }else {
+                } else {
                     FlockMessagePoster.Post("No scores!");
                 }
             }
@@ -66,11 +67,11 @@ public class Controller {
     }
 
     private static boolean isScorerLeaderBoardMessage(String message) {
-        return message.contains("scorer") && message.contains("top");
+        return StringUtils.containsIgnoreCase(message, "scorer") && StringUtils.containsIgnoreCase(message, "top");
     }
 
     private static boolean isScorerCounterModificationMessage(String message) {
-        return message.contains("scorer") && message.contains("@") && (message.contains("++") || message.contains("--"));
+        return StringUtils.containsIgnoreCase(message,"scorer") && message.contains("@") && (message.contains("++") || message.contains("--"));
     }
 
     private int decrementScore(String name) {
