@@ -98,7 +98,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>olympus.flock.Main</mainClass>
+                                    <mainClass>co.flock.Main</mainClass>
                                 </transformer>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
@@ -115,7 +115,4 @@
             </plugin>
         </plugins>
     </build>
-
-
-
 </project>
