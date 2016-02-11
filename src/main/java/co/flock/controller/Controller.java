@@ -39,12 +39,12 @@ public class Controller {
                     String last = splited[splited.length - 1];
                     if (last.compareTo("++") == 0) {
                         String name = extractName(splited);
-                        responseMap.put(name, String.valueOf(incrementScore(name)));
+                        responseMap.put(name, String.valueOf(modifyScore(name, true)));
                         FlockMessagePoster.Post(getFormattedText(responseMap));
                         return responseMap;
                     } else if (last.compareTo("--") == 0) {
                         String name = extractName(splited);
-                        responseMap.put(name, String.valueOf(decrementScore(name)));
+                        responseMap.put(name, String.valueOf(modifyScore(name, false)));
                         FlockMessagePoster.Post(getFormattedText(responseMap));
                         return responseMap;
                     }
@@ -95,33 +95,28 @@ public class Controller {
         return StringUtils.containsIgnoreCase(message, "scorer") && message.contains("@") && (message.contains("++") || message.contains("--"));
     }
 
-    private int decrementScore(String name) {
+    private int modifyScore(String name, boolean increment) {
+
         Map<String, Integer> scoreMap = getScoreMap();
         if (scoreMap.containsKey(name)) {
             Integer score = scoreMap.get(name);
-            score--;
-            scoreMap.put(name, score);
-            userRepository.delete(new User(name, 0));
-            userRepository.put(new User(name, score));
-        } else {
-            userRepository.put(new User(name, -1));
-            scoreMap.put(name, -1);
-        }
-
-        return scoreMap.get(name);
-    }
-
-    private int incrementScore(String name) {
-        Map<String, Integer> scoreMap = getScoreMap();
-        if (scoreMap.containsKey(name)) {
-            Integer score = scoreMap.get(name);
-            score++;
+            if (increment) {
+                score++;
+            } else {
+                score--;
+            }
             userRepository.delete(new User(name, 0));
             userRepository.put(new User(name, score));
             scoreMap.put(name, score);
         } else {
-            userRepository.put(new User(name, 1));
-            scoreMap.put(name, 1);
+            int score = 0;
+            if (increment) {
+                score++;
+            } else {
+                score--;
+            }
+            userRepository.put(new User(name, score));
+            scoreMap.put(name, score);
         }
 
         return scoreMap.get(name);
