@@ -101,9 +101,10 @@ public class Controller {
             Integer score = scoreMap.get(name);
             score--;
             scoreMap.put(name, score);
-            userRepository.put(new User(name,score));
+            userRepository.delete(new User(name, 0));
+            userRepository.put(new User(name, score));
         } else {
-            userRepository.put(new User(name,-1));
+            userRepository.put(new User(name, -1));
             scoreMap.put(name, -1);
         }
 
@@ -115,10 +116,11 @@ public class Controller {
         if (scoreMap.containsKey(name)) {
             Integer score = scoreMap.get(name);
             score++;
-            userRepository.put(new User(name,score));
+            userRepository.delete(new User(name, 0));
+            userRepository.put(new User(name, score));
             scoreMap.put(name, score);
         } else {
-            userRepository.put(new User(name,-1));
+            userRepository.put(new User(name, 1));
             scoreMap.put(name, 1);
         }
 
