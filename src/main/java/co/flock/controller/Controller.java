@@ -49,10 +49,23 @@ public class Controller {
                 } else {
                     FlockMessagePoster.Post("No scores!");
                 }
+            } else if (isScorerIndiScoreMessage(message)) {
+                String name = message.substring(message.indexOf('@') + 1).trim();
+                if (_scoreMap.containsKey(name)) {
+                    responseMap.put(name, String.valueOf(_scoreMap.get(name)));
+                    FlockMessagePoster.Post(getFormattedText(responseMap));
+                    return responseMap;
+                }else {
+                    FlockMessagePoster.Post("Not found!");
+                }
             }
         }
 
         return null;
+    }
+
+    private static boolean isScorerIndiScoreMessage(String message) {
+        return StringUtils.containsIgnoreCase(message, "scorer") && message.contains("@");
     }
 
     private static String getFormattedText(Map<String, String> responseMap) {
@@ -71,7 +84,7 @@ public class Controller {
     }
 
     private static boolean isScorerCounterModificationMessage(String message) {
-        return StringUtils.containsIgnoreCase(message,"scorer") && message.contains("@") && (message.contains("++") || message.contains("--"));
+        return StringUtils.containsIgnoreCase(message, "scorer") && message.contains("@") && (message.contains("++") || message.contains("--"));
     }
 
     private int decrementScore(String name) {
