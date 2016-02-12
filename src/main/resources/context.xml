@@ -11,6 +11,16 @@
             http://www.springframework.org/schema/mvc
             http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
 
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location">
+            <value>classpath:/config.properties</value>
+        </property>
+    </bean>
+
+    <bean id="urlBean" class="co.flock.FlockMessagePoster">
+        <property name="flockIncomingWebhookUrl" value="${incoming.webhook.url}"/>
+    </bean>
+
     <bean id="connectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
           p:host-name="localhost" p:port="6379" p:password=""/>
 
