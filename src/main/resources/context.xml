@@ -21,22 +21,9 @@
         <property name="flockIncomingWebhookUrl" value="${incoming.webhook.url}"/>
     </bean>
 
-    <bean id="connectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
-          p:host-name="localhost" p:port="6379" p:password=""/>
-
-    <!-- redis template -->
-    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate"
-          p:connection-factory-ref="connectionFactory"/>
-
-    <bean id="userRepository" class="co.flock.redis.repository.UserRepository">
-        <property name="redisTemplate" ref="redisTemplate"/>
-    </bean>
-
     <context:annotation-config/>
     <context:component-scan base-package="co.flock"/>
 
-    <mvc:annotation-driven>
-    </mvc:annotation-driven>
-
+    <mvc:annotation-driven/>
 
 </beans>

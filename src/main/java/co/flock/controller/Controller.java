@@ -1,10 +1,8 @@
 package co.flock.controller;
 
 import co.flock.FlockMessagePoster;
-import co.flock.redis.domain.User;
-import co.flock.redis.repository.UserRepository;
+import co.flock.db.Database;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -17,12 +15,7 @@ public class Controller {
     private static final String FILED_TEXT = "text";
     private static final Pattern SPACE_PATTERN = Pattern.compile("\\s+");
     private static final int MAX_TOP_SCORERS = 5;
-    private UserRepository userRepository;
-
-    @Autowired
-    public void setRepository(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final Database _db = new Database();
 
     @RequestMapping(value = "/scorer", method = RequestMethod.POST)
     @ResponseBody
@@ -59,8 +52,8 @@ public class Controller {
                         return responseMap;
                     } else {
                         String name = message.substring(message.indexOf('@') + 1).trim();
-                        if (getScoreMap().containsKey(name)) {
-                            responseMap.put(name, String.valueOf(getScoreMap().get(name)));
+                        if (_db.containsKey(name)) {
+                            responseMap.put(name, String.valueOf(_db.get(name)));
                             FlockMessagePoster.Post(getFormattedText(responseMap));
                             return responseMap;
                         } else {
@@ -69,7 +62,7 @@ public class Controller {
                     }
                 }
             } else if (isLeaderboardFetcherMessage(message)) {
-                Map<String, String> topScorers = getTopScorers(getScoreMap(), false, MAX_TOP_SCORERS);
+                Map<String, String> topScorers = getTopScorers(_db.getAll(), false, MAX_TOP_SCORERS);
                 if (!topScorers.isEmpty()) {
                     FlockMessagePoster.Post(getFormattedText(topScorers));
                     return topScorers;
@@ -103,17 +96,14 @@ public class Controller {
 
     private int modifyScore(String name, boolean increment) {
 
-        Map<String, Integer> scoreMap = getScoreMap();
-        if (scoreMap.containsKey(name)) {
-            Integer score = scoreMap.get(name);
+        if (_db.containsKey(name)) {
+            Integer score = (Integer) _db.get(name);
             if (increment) {
                 score++;
             } else {
                 score--;
             }
-            userRepository.delete(new User(name, 0));
-            userRepository.put(new User(name, score));
-            scoreMap.put(name, score);
+            _db.put(name, score);
         } else {
             int score = 0;
             if (increment) {
@@ -121,35 +111,21 @@ public class Controller {
             } else {
                 score--;
             }
-            userRepository.put(new User(name, score));
-            scoreMap.put(name, score);
+            _db.put(name, score);
         }
 
-        return scoreMap.get(name);
+        return (int) _db.get(name);
     }
 
     private int putScore(String name, int score) {
-        Map<String, Integer> scoreMap = getScoreMap();
-        if (scoreMap.containsKey(name)) {
-            Integer oldScore = scoreMap.get(name);
+        if (_db.containsKey(name)) {
+            Integer oldScore = (Integer) _db.get(name);
             int newScore = oldScore + score;
-            userRepository.delete(new User(name, 0));
-            userRepository.put(new User(name, newScore));
-            scoreMap.put(name, newScore);
+            _db.put(name, newScore);
         } else {
-            userRepository.put(new User(name, score));
-            scoreMap.put(name, score);
+            _db.put(name, score);
         }
-        return scoreMap.get(name);
-    }
-
-    private Map<String, Integer> getScoreMap() {
-        List<User> users = userRepository.getObjects();
-        Map<String, Integer> map = new HashMap<>();
-        for (User user : users) {
-            map.put(user.getName(), user.getScore());
-        }
-        return map;
+        return (int) _db.get(name);
     }
 
     private static String extractName(String[] message) {
@@ -163,16 +139,16 @@ public class Controller {
         return name;
     }
 
-    private static Map<String, String> getTopScorers(Map<String, Integer> unsortMap, final boolean order, int max) {
-        List<Map.Entry<String, Integer>> list = new LinkedList<>(unsortMap.entrySet());
+    private static Map<String, String> getTopScorers(Map<Object, Object> unsortMap, final boolean order, int max) {
+        List<Map.Entry<Object, Object>> list = new LinkedList<>(unsortMap.entrySet());
 
-        Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
-            public int compare(Map.Entry<String, Integer> o1,
-                               Map.Entry<String, Integer> o2) {
+        Collections.sort(list, new Comparator<Map.Entry<Object, Object>>() {
+            public int compare(Map.Entry<Object, Object> o1,
+                               Map.Entry<Object, Object> o2) {
                 if (order) {
-                    return o1.getValue().compareTo(o2.getValue());
+                    return ((Integer)o1.getValue()).compareTo((Integer) o2.getValue());
                 } else {
-                    return o2.getValue().compareTo(o1.getValue());
+                    return ((Integer)o2.getValue()).compareTo((Integer) o1.getValue());
 
                 }
             }
@@ -180,8 +156,8 @@ public class Controller {
 
         Map<String, String> sortedMap = new LinkedHashMap<>();
         int counter = 0;
-        for (Map.Entry<String, Integer> entry : list) {
-            sortedMap.put(entry.getKey(), String.valueOf(entry.getValue()));
+        for (Map.Entry<Object, Object> entry : list) {
+            sortedMap.put((String)entry.getKey(), String.valueOf(entry.getValue()));
             counter++;
             if (counter == max) {
                 break;

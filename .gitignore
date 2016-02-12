@@ -2,3 +2,5 @@
 target/
 dependency-reduced-pom.xml
 FlockScorer.iml
+*.txt
+*.txt.*
