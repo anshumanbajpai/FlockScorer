@@ -10,13 +10,12 @@ import java.util.concurrent.ConcurrentNavigableMap;
 
 public class Database {
 
-    private static final String FILE_PATH = "db.txt";
     private static final String SCORE_MAP = "scoreMap";
     private final DB _db;
     private final ConcurrentNavigableMap _treeMap;
 
-    public Database() {
-        _db = DBMaker.newFileDB(new File(FILE_PATH)).make();
+    public Database(String dbName) {
+        _db = DBMaker.newFileDB(new File(dbName)).make();
         _treeMap = _db.getTreeMap(SCORE_MAP);
     }
 

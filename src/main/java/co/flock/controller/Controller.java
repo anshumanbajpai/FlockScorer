@@ -1,6 +1,5 @@
 package co.flock.controller;
 
-import co.flock.FlockMessagePoster;
 import co.flock.db.Database;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -15,14 +14,20 @@ public class Controller {
     private static final String FILED_TEXT = "text";
     private static final Pattern SPACE_PATTERN = Pattern.compile("\\s+");
     private static final int MAX_TOP_SCORERS = 5;
-    private final Database _db = new Database();
+    private Database _db;
 
     @RequestMapping(value = "/scorer", method = RequestMethod.POST)
     @ResponseBody
-    public Map<String, String> respond(@RequestBody Map<String, Object> req) {
+    public Map<String, String> respond(@RequestParam("token") String token, @RequestBody Map<String, Object> req) {
 
-        Map<String, String> responseMap = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         String message = (String) req.get(FILED_TEXT);
+
+        if (!StringUtils.isNotBlank(token))
+            return null;
+
+        _db = new Database(token);
+
         if (message != null) {
             message = message.trim();
             if (isScoreCheckerOrModifierMessage(message)) {
@@ -41,38 +46,43 @@ public class Controller {
 
                     if (validInput) {
                         String name = extractName(splited);
-                        responseMap.put(name, String.valueOf(putScore(name, score)));
-                        FlockMessagePoster.Post(getFormattedText(responseMap));
-                        return responseMap;
+                        map.put(name, String.valueOf(putScore(name, score)));
+                        return getResponseMap(map);
                     } else if (last.compareTo("++") == 0 || last.compareTo("--") == 0) {
                         boolean increment = last.compareTo("++") == 0;
                         String name = extractName(splited);
-                        responseMap.put(name, String.valueOf(modifyScore(name, increment)));
-                        FlockMessagePoster.Post(getFormattedText(responseMap));
-                        return responseMap;
+                        map.put(name, String.valueOf(modifyScore(name, increment)));
+                        return getResponseMap(map);
                     } else {
                         String name = message.substring(message.indexOf('@') + 1).trim();
                         if (_db.containsKey(name)) {
-                            responseMap.put(name, String.valueOf(_db.get(name)));
-                            FlockMessagePoster.Post(getFormattedText(responseMap));
-                            return responseMap;
+                            map.put(name, String.valueOf(_db.get(name)));
+                            return getResponseMap(map);
                         } else {
-                            FlockMessagePoster.Post("Not found!");
+                            map.put(FILED_TEXT, "Not found!");
+                            return map;
                         }
                     }
                 }
             } else if (isLeaderboardFetcherMessage(message)) {
                 Map<String, String> topScorers = getTopScorers(_db.getAll(), false, MAX_TOP_SCORERS);
                 if (!topScorers.isEmpty()) {
-                    FlockMessagePoster.Post(getFormattedText(topScorers));
-                    return topScorers;
+                    return getResponseMap(topScorers);
                 } else {
-                    FlockMessagePoster.Post("No scores!");
+                    topScorers.put(FILED_TEXT, "No scores found!");
+                    return topScorers;
                 }
             }
         }
 
         return null;
+    }
+
+    private Map<String, String> getResponseMap(Map<String, String> map) {
+        String responseText = getFormattedText(map);
+        map.clear();
+        map.put(FILED_TEXT, responseText);
+        return map;
     }
 
     private static boolean isScoreCheckerOrModifierMessage(String message) {
@@ -146,9 +156,9 @@ public class Controller {
             public int compare(Map.Entry<Object, Object> o1,
                                Map.Entry<Object, Object> o2) {
                 if (order) {
-                    return ((Integer)o1.getValue()).compareTo((Integer) o2.getValue());
+                    return ((Integer) o1.getValue()).compareTo((Integer) o2.getValue());
                 } else {
-                    return ((Integer)o2.getValue()).compareTo((Integer) o1.getValue());
+                    return ((Integer) o2.getValue()).compareTo((Integer) o1.getValue());
 
                 }
             }
@@ -157,7 +167,7 @@ public class Controller {
         Map<String, String> sortedMap = new LinkedHashMap<>();
         int counter = 0;
         for (Map.Entry<Object, Object> entry : list) {
-            sortedMap.put((String)entry.getKey(), String.valueOf(entry.getValue()));
+            sortedMap.put((String) entry.getKey(), String.valueOf(entry.getValue()));
             counter++;
             if (counter == max) {
                 break;
