@@ -58,7 +58,7 @@ public class Controller {
                         if (_db.containsKey(name)) {
                             map.put(name, String.valueOf(_db.get(name)));
                             return getResponseMap(map);
-                        } else {
+                        } else if (!StringUtils.containsIgnoreCase(name, "point")) {
                             map.put(name, "0");
                             return getResponseMap(map);
                         }
