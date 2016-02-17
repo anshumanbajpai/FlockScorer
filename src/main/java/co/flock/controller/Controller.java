@@ -59,8 +59,8 @@ public class Controller {
                             map.put(name, String.valueOf(_db.get(name)));
                             return getResponseMap(map);
                         } else {
-                            map.put(FILED_TEXT, "Not found!");
-                            return map;
+                            map.put(name, "0");
+                            return getResponseMap(map);
                         }
                     }
                 }
@@ -78,7 +78,7 @@ public class Controller {
         return null;
     }
 
-    private Map<String, String> getResponseMap(Map<String, String> map) {
+    private static Map<String, String> getResponseMap(Map<String, String> map) {
         String responseText = getFormattedText(map);
         map.clear();
         map.put(FILED_TEXT, responseText);
@@ -91,13 +91,21 @@ public class Controller {
 
     private static String getFormattedText(Map<String, String> responseMap) {
 
-        String response = "";
+        StringBuilder response = new StringBuilder(100);
 
         for (Map.Entry<String, String> entry : responseMap.entrySet()) {
-            response += entry.getKey() + " : " + entry.getValue() + '\n';
+            response.append(entry.getKey()).append(" has ");
+            if ((Integer.valueOf(entry.getValue()) > 1)) {
+                response.append(entry.getValue()).append(" points");
+            } else if (Integer.valueOf(entry.getValue()) == 0) {
+                response.append("no point");
+            } else {
+                response.append(entry.getValue()).append(" point");
+            }
+            response.append('\n');
         }
 
-        return response;
+        return response.toString();
     }
 
     private static boolean isLeaderboardFetcherMessage(String message) {
